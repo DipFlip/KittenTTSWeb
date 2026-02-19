@@ -10,6 +10,8 @@ Built on [KittenTTS](https://github.com/KittenML/KittenTTS) using [ONNX Runtime 
 
 | Model | Params | First load |
 |-------|--------|------------|
+| Nano int8 | 15M | ~20 MB |
+| Nano | 15M | ~57 MB |
 | Micro | 40M | ~45 MB |
 | Mini | 80M | ~82 MB |
 
