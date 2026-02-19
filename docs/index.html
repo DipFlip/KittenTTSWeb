@@ -198,7 +198,7 @@ $('#gen').addEventListener('click', async () => {
     audioEl.src = url;
     audioEl.play();
 
-    const rt = (genTime / duration).toFixed(2);
+    const rt = (duration / genTime).toFixed(2);
     const lt = loadTime > 1000 ? ` (model loaded in ${(loadTime / 1000).toFixed(1)}s)` : '';
     $('#stats').textContent = `${duration.toFixed(2)}s audio \u00b7 ${genTime.toFixed(2)}s gen \u00b7 ${rt}x realtime${lt}`;
     $('#result').classList.remove('hidden');
