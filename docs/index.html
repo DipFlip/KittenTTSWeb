@@ -56,7 +56,7 @@
   <p class="tagline">Text-to-speech running entirely in your browser. No server needed.</p>
 
   <label for="text">Text</label>
-  <textarea id="text" placeholder="Type something to speak...">Hey there, I'm Spot! What will we work on today?</textarea>
+  <textarea id="text" placeholder="Type something to speak...">Hey! I can talk now, even offline</textarea>
 
   <div class="row">
     <div>
@@ -200,7 +200,7 @@ $('#gen').addEventListener('click', async () => {
 
     const rt = (genTime / duration).toFixed(2);
     const lt = loadTime > 1000 ? ` (model loaded in ${(loadTime / 1000).toFixed(1)}s)` : '';
-    $('#stats').textContent = `${duration.toFixed(2)}s audio \u00b7 ${genTime.toFixed(2)}s gen \u00b7 ${rt}x RT${lt}`;
+    $('#stats').textContent = `${duration.toFixed(2)}s audio \u00b7 ${genTime.toFixed(2)}s gen \u00b7 ${rt}x realtime${lt}`;
     $('#result').classList.remove('hidden');
   } catch (e) {
     setStatus('');
