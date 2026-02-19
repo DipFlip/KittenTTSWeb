@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KittenTTS</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0e0e10;
+    color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    padding: 40px 16px;
+    min-height: 100vh;
+  }
+  .container { max-width: 520px; width: 100%; }
+  h1 { font-size: 1.5rem; margin-bottom: 24px; color: #fff; }
+  h1 span { color: #f472b6; }
+  label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea {
+    width: 100%; min-height: 100px; padding: 12px;
+    background: #1a1a1e; border: 1px solid #333; border-radius: 8px;
+    color: #e0e0e0; font-size: 0.95rem; resize: vertical; font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: #f472b6; }
+  .row { display: flex; gap: 12px; margin-top: 16px; }
+  .row > div { flex: 1; }
+  select, input[type=range] {
+    width: 100%; padding: 8px; background: #1a1a1e; border: 1px solid #333;
+    border-radius: 6px; color: #e0e0e0; font-size: 0.9rem;
+  }
+  select:focus { outline: none; border-color: #f472b6; }
+  .speed-val { font-size: 0.85rem; color: #aaa; text-align: right; margin-top: 2px; }
+  button {
+    margin-top: 20px; width: 100%; padding: 12px;
+    background: #f472b6; color: #000; font-weight: 600; font-size: 0.95rem;
+    border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .result {
+    margin-top: 20px; padding: 16px; background: #1a1a1e;
+    border-radius: 8px; border: 1px solid #333;
+  }
+  .result.hidden { display: none; }
+  audio { width: 100%; margin-top: 8px; }
+  .stats { font-size: 0.8rem; color: #888; margin-top: 8px; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #0002; border-top-color: #000; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1><span>Kitten</span>TTS Web</h1>
+
+  <label for="text">Text</label>
+  <textarea id="text" placeholder="Type something to speak...">Hey there, I'm Spot! What will we work on today?</textarea>
+
+  <div class="row">
+    <div>
+      <label for="model">Model</label>
+      <select id="model">
+        <option value="micro-40M">Micro &mdash; 40M</option>
+        <option value="mini-80M">Mini &mdash; 80M</option>
+      </select>
+    </div>
+    <div>
+      <label for="voice">Voice</label>
+      <select id="voice">
+        <option>Jasper</option>
+        <option>Bella</option>
+        <option>Luna</option>
+        <option>Bruno</option>
+        <option>Rosie</option>
+        <option>Hugo</option>
+        <option>Kiki</option>
+        <option>Leo</option>
+      </select>
+    </div>
+    <div>
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
+      <div class="speed-val" id="speed-val">1.0x</div>
+    </div>
+  </div>
+
+  <button id="gen">Generate</button>
+
+  <div class="result hidden" id="result">
+    <audio id="audio" controls></audio>
+    <div class="stats" id="stats"></div>
+  </div>
+</div>
+
+<script>
+const $ = s => document.querySelector(s);
+const speedSlider = $('#speed');
+const speedVal = $('#speed-val');
+speedSlider.addEventListener('input', () => { speedVal.textContent = parseFloat(speedSlider.value).toFixed(2) + 'x'; });
+
+$('#gen').addEventListener('click', async () => {
+  const btn = $('#gen');
+  const text = $('#text').value.trim();
+  if (!text) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Generating...';
+  $('#result').classList.add('hidden');
+
+  try {
+    const t0 = performance.now();
+    const res = await fetch('/api/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        voice: $('#voice').value,
+        model: $('#model').value,
+        speed: parseFloat(speedSlider.value),
+      }),
+    });
+    const wallTime = ((performance.now() - t0) / 1000).toFixed(2);
+
+    if (!res.ok) { alert('Generation failed: ' + await res.text()); return; }
+
+    const genTime = res.headers.get('X-Gen-Time');
+    const duration = res.headers.get('X-Audio-Duration');
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+
+    const audio = $('#audio');
+    audio.src = url;
+    audio.play();
+
+    const rt = (parseFloat(genTime) / parseFloat(duration)).toFixed(2);
+    $('#stats').textContent = `${parseFloat(duration).toFixed(2)}s audio \u00b7 ${genTime}s gen \u00b7 ${rt}x RT \u00b7 ${wallTime}s wall`;
+    $('#result').classList.remove('hidden');
+  } catch (e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }
+});
+
+$('#text').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('#gen').click(); }
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KittenTTS Web</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0e0e10; color: #e0e0e0;
+    display: flex; justify-content: center; padding: 60px 16px; min-height: 100vh;
+  }
+  .container { max-width: 600px; width: 100%; }
+  h1 { font-size: 2rem; margin-bottom: 8px; color: #fff; }
+  h1 span { color: #f472b6; }
+  .tagline { color: #888; margin-bottom: 32px; }
+  h2 { font-size: 1.1rem; color: #fff; margin-top: 28px; margin-bottom: 8px; }
+  p, li { line-height: 1.6; color: #bbb; }
+  ul { padding-left: 20px; }
+  li { margin-bottom: 4px; }
+  code {
+    background: #1a1a1e; padding: 2px 6px; border-radius: 4px;
+    font-size: 0.9em; color: #f472b6;
+  }
+  pre {
+    background: #1a1a1e; padding: 16px; border-radius: 8px;
+    overflow-x: auto; margin: 12px 0; border: 1px solid #333;
+  }
+  pre code { background: none; padding: 0; color: #e0e0e0; }
+  a { color: #f472b6; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #222; }
+  th { color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1><span>Kitten</span>TTS Web</h1>
+  <p class="tagline">Tiny, fast text-to-speech that runs on CPU. No GPU needed.</p>
+
+  <h2>Run locally</h2>
+  <pre><code>git clone https://github.com/DipFlip/KittenTTSWeb.git
+cd KittenTTSWeb
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m uvicorn webui:app --host 127.0.0.1 --port 8000</code></pre>
+  <p>Then open <code>http://localhost:8000</code>.</p>
+
+  <h2>Models</h2>
+  <table>
+    <tr><th>Model</th><th>Params</th><th>Size</th></tr>
+    <tr><td>Micro</td><td>40M</td><td>41 MB</td></tr>
+    <tr><td>Mini</td><td>80M</td><td>80 MB</td></tr>
+  </table>
+  <p>Weights download automatically from Hugging Face on first use.</p>
+
+  <h2>Voices</h2>
+  <p>Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo</p>
+
+  <h2>Links</h2>
+  <ul>
+    <li><a href="https://github.com/DipFlip/KittenTTSWeb">GitHub repo</a></li>
+    <li><a href="https://github.com/KittenML/KittenTTS">KittenTTS (upstream)</a></li>
+  </ul>
+</div>
+</body>
+</html>
