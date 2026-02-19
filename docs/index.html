@@ -4,67 +4,208 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KittenTTS Web</title>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background: #0e0e10; color: #e0e0e0;
-    display: flex; justify-content: center; padding: 60px 16px; min-height: 100vh;
+    display: flex; justify-content: center; padding: 40px 16px; min-height: 100vh;
   }
-  .container { max-width: 600px; width: 100%; }
-  h1 { font-size: 2rem; margin-bottom: 8px; color: #fff; }
+  .container { max-width: 520px; width: 100%; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; color: #fff; }
   h1 span { color: #f472b6; }
-  .tagline { color: #888; margin-bottom: 32px; }
-  h2 { font-size: 1.1rem; color: #fff; margin-top: 28px; margin-bottom: 8px; }
-  p, li { line-height: 1.6; color: #bbb; }
-  ul { padding-left: 20px; }
-  li { margin-bottom: 4px; }
-  code {
-    background: #1a1a1e; padding: 2px 6px; border-radius: 4px;
-    font-size: 0.9em; color: #f472b6;
+  .tagline { color: #666; font-size: 0.8rem; margin-bottom: 24px; }
+  label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea {
+    width: 100%; min-height: 100px; padding: 12px;
+    background: #1a1a1e; border: 1px solid #333; border-radius: 8px;
+    color: #e0e0e0; font-size: 0.95rem; resize: vertical; font-family: inherit;
   }
-  pre {
-    background: #1a1a1e; padding: 16px; border-radius: 8px;
-    overflow-x: auto; margin: 12px 0; border: 1px solid #333;
+  textarea:focus { outline: none; border-color: #f472b6; }
+  .row { display: flex; gap: 12px; margin-top: 16px; }
+  .row > div { flex: 1; }
+  select, input[type=range] {
+    width: 100%; padding: 8px; background: #1a1a1e; border: 1px solid #333;
+    border-radius: 6px; color: #e0e0e0; font-size: 0.9rem;
   }
-  pre code { background: none; padding: 0; color: #e0e0e0; }
-  a { color: #f472b6; text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #222; }
-  th { color: #888; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  select:focus { outline: none; border-color: #f472b6; }
+  .speed-val { font-size: 0.85rem; color: #aaa; text-align: right; margin-top: 2px; }
+  button {
+    margin-top: 20px; width: 100%; padding: 12px;
+    background: #f472b6; color: #000; font-weight: 600; font-size: 0.95rem;
+    border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .result { margin-top: 20px; padding: 16px; background: #1a1a1e; border-radius: 8px; border: 1px solid #333; }
+  .result.hidden { display: none; }
+  audio { width: 100%; margin-top: 8px; }
+  .stats { font-size: 0.8rem; color: #888; margin-top: 8px; }
+  .status { margin-top: 12px; font-size: 0.8rem; color: #666; min-height: 1.2em; }
+  .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #0002; border-top-color: #000; border-radius: 50%; animation: spin 0.6s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .footer { margin-top: 32px; font-size: 0.75rem; color: #444; text-align: center; }
+  .footer a { color: #666; text-decoration: none; }
+  .footer a:hover { color: #f472b6; }
 </style>
 </head>
 <body>
 <div class="container">
   <h1><span>Kitten</span>TTS Web</h1>
-  <p class="tagline">Tiny, fast text-to-speech that runs on CPU. No GPU needed.</p>
+  <p class="tagline">Text-to-speech running entirely in your browser. No server needed.</p>
 
-  <h2>Run locally</h2>
-  <pre><code>git clone https://github.com/DipFlip/KittenTTSWeb.git
-cd KittenTTSWeb
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn webui:app --host 127.0.0.1 --port 8000</code></pre>
-  <p>Then open <code>http://localhost:8000</code>.</p>
+  <label for="text">Text</label>
+  <textarea id="text" placeholder="Type something to speak...">Hey there, I'm Spot! What will we work on today?</textarea>
 
-  <h2>Models</h2>
-  <table>
-    <tr><th>Model</th><th>Params</th><th>Size</th></tr>
-    <tr><td>Micro</td><td>40M</td><td>41 MB</td></tr>
-    <tr><td>Mini</td><td>80M</td><td>80 MB</td></tr>
-  </table>
-  <p>Weights download automatically from Hugging Face on first use.</p>
+  <div class="row">
+    <div>
+      <label for="model">Model</label>
+      <select id="model">
+        <option value="micro-40M">Micro &mdash; 40M</option>
+        <option value="mini-80M">Mini &mdash; 80M</option>
+      </select>
+    </div>
+    <div>
+      <label for="voice">Voice</label>
+      <select id="voice">
+        <option>Jasper</option>
+        <option>Bella</option>
+        <option>Luna</option>
+        <option>Bruno</option>
+        <option>Rosie</option>
+        <option>Hugo</option>
+        <option>Kiki</option>
+        <option>Leo</option>
+      </select>
+    </div>
+    <div>
+      <label for="speed">Speed</label>
+      <input type="range" id="speed" min="0.5" max="2.0" step="0.05" value="1.0">
+      <div class="speed-val" id="speed-val">1.0x</div>
+    </div>
+  </div>
 
-  <h2>Voices</h2>
-  <p>Bella, Jasper, Luna, Bruno, Rosie, Hugo, Kiki, Leo</p>
+  <button id="gen">Generate</button>
+  <div class="status" id="status"></div>
 
-  <h2>Links</h2>
-  <ul>
-    <li><a href="https://github.com/DipFlip/KittenTTSWeb">GitHub repo</a></li>
-    <li><a href="https://github.com/KittenML/KittenTTS">KittenTTS (upstream)</a></li>
-  </ul>
+  <div class="result hidden" id="result">
+    <audio id="audio" controls></audio>
+    <div class="stats" id="stats"></div>
+  </div>
+
+  <div class="footer">
+    <a href="https://github.com/DipFlip/KittenTTSWeb">GitHub</a>
+    &middot;
+    Powered by <a href="https://github.com/KittenML/KittenTTS">KittenTTS</a>
+    &middot;
+    Runs 100% in your browser via ONNX Runtime Web + eSpeak WASM
+  </div>
 </div>
+
+<script type="module">
+import { preprocessText } from './preprocess.js';
+import { KittenTTSBrowser } from './tts.js';
+
+const $ = s => document.querySelector(s);
+const tts = new KittenTTSBrowser();
+const statusEl = $('#status');
+
+function setStatus(msg) { statusEl.textContent = msg; }
+
+const speedSlider = $('#speed');
+const speedVal = $('#speed-val');
+speedSlider.addEventListener('input', () => {
+  speedVal.textContent = parseFloat(speedSlider.value).toFixed(2) + 'x';
+});
+
+function audioToWavBlob(samples, sampleRate = 24000) {
+  const numSamples = samples.length;
+  const buffer = new ArrayBuffer(44 + numSamples * 2);
+  const view = new DataView(buffer);
+
+  // WAV header
+  const writeStr = (off, str) => { for (let i = 0; i < str.length; i++) view.setUint8(off + i, str.charCodeAt(i)); };
+  writeStr(0, 'RIFF');
+  view.setUint32(4, 36 + numSamples * 2, true);
+  writeStr(8, 'WAVE');
+  writeStr(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true); // PCM
+  view.setUint16(22, 1, true); // mono
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * 2, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeStr(36, 'data');
+  view.setUint32(40, numSamples * 2, true);
+
+  // Convert float32 to int16
+  let offset = 44;
+  for (let i = 0; i < numSamples; i++) {
+    const s = Math.max(-1, Math.min(1, samples[i]));
+    view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    offset += 2;
+  }
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+$('#gen').addEventListener('click', async () => {
+  const btn = $('#gen');
+  const rawText = $('#text').value.trim();
+  if (!rawText) return;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Working...';
+  $('#result').classList.add('hidden');
+
+  try {
+    const modelKey = $('#model').value;
+    const voice = $('#voice').value;
+    const speed = parseFloat(speedSlider.value);
+
+    // Preprocess text
+    setStatus('Preprocessing text...');
+    const cleanText = preprocessText(rawText);
+
+    // Load model (cached after first load)
+    setStatus(`Loading ${modelKey} model (first time downloads ~${modelKey === 'micro-40M' ? '45' : '82'} MB)...`);
+    const t0 = performance.now();
+    await tts.loadModel(modelKey);
+    const loadTime = performance.now() - t0;
+
+    // Generate
+    setStatus('Generating speech...');
+    const t1 = performance.now();
+    const audio = await tts.generate(cleanText, voice, speed);
+    const genTime = (performance.now() - t1) / 1000;
+    const duration = audio.length / 24000;
+
+    // Play
+    setStatus('');
+    const blob = audioToWavBlob(audio);
+    const url = URL.createObjectURL(blob);
+    const audioEl = $('#audio');
+    audioEl.src = url;
+    audioEl.play();
+
+    const rt = (genTime / duration).toFixed(2);
+    const lt = loadTime > 1000 ? ` (model loaded in ${(loadTime / 1000).toFixed(1)}s)` : '';
+    $('#stats').textContent = `${duration.toFixed(2)}s audio \u00b7 ${genTime.toFixed(2)}s gen \u00b7 ${rt}x RT${lt}`;
+    $('#result').classList.remove('hidden');
+  } catch (e) {
+    setStatus('');
+    console.error(e);
+    alert('Error: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Generate';
+  }
+});
+
+$('#text').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); $('#gen').click(); }
+});
+</script>
 </body>
 </html>

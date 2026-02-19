@@ -1,0 +1,66 @@
+{
+  "expr-voice-2-m": {
+    "file": "expr-voice-2-m.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-2-f": {
+    "file": "expr-voice-2-f.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-3-m": {
+    "file": "expr-voice-3-m.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-3-f": {
+    "file": "expr-voice-3-f.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-4-m": {
+    "file": "expr-voice-4-m.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-4-f": {
+    "file": "expr-voice-4-f.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-5-m": {
+    "file": "expr-voice-5-m.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  },
+  "expr-voice-5-f": {
+    "file": "expr-voice-5-f.bin",
+    "shape": [
+      400,
+      256
+    ],
+    "dtype": "float32"
+  }
+}

@@ -1,26 +1,27 @@
 # KittenTTS Web
 
-A web UI for [KittenTTS](https://github.com/KittenML/KittenTTS) — tiny, fast text-to-speech that runs on CPU.
+Text-to-speech running entirely in your browser. No server, no GPU, no install.
 
-## Quick start
+**[Try it live](https://dipflip.github.io/KittenTTSWeb/)**
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m uvicorn webui:app --host 127.0.0.1 --port 8000
-```
+Built on [KittenTTS](https://github.com/KittenML/KittenTTS) with [ONNX Runtime Web](https://onnxruntime.ai/) and [eSpeak-NG WASM](https://github.com/nickvdh/nickvdh.github.io/tree/master/nickvdh/nickvdh.github.io/tree/master/nickvdh/nickvdh.github.io/tree/master/nickvdh/espeak-ng-wasm).
 
-Open http://localhost:8000.
+## How it works
+
+1. Text preprocessing expands numbers, contractions, etc. into words
+2. eSpeak-NG (compiled to WebAssembly) converts text to IPA phonemes
+3. A token mapper converts phonemes to model input IDs
+4. ONNX Runtime Web runs the TTS model in your browser (WASM backend)
+5. Audio plays directly — nothing leaves your device
 
 ## Models
 
-| Model | Params | Size |
-|-------|--------|------|
-| Micro | 40M | 41 MB |
-| Mini | 80M | 80 MB |
+| Model | Params | Download |
+|-------|--------|----------|
+| Micro | 40M | ~45 MB (first load) |
+| Mini | 80M | ~82 MB (first load) |
 
-Weights download automatically on first use from Hugging Face.
+Models are fetched from Hugging Face and cached by your browser.
 
 ## Voices
 
