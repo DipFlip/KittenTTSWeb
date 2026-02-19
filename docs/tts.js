@@ -151,6 +151,16 @@ export class KittenTTSBrowser {
     if (this.modelKey === modelKey && this.session) return;
 
     const configs = {
+      "nano-int8-15M": {
+        repo: "KittenML/kitten-tts-nano-0.8-int8",
+        onnx: "kitten_tts_nano_v0_8.onnx",
+        voiceDir: "nano-int8",
+      },
+      "nano-15M": {
+        repo: "KittenML/kitten-tts-nano-0.8-fp32",
+        onnx: "kitten_tts_nano_v0_8.onnx",
+        voiceDir: "nano",
+      },
       "micro-40M": {
         repo: "KittenML/kitten-tts-micro-0.8",
         onnx: "kitten_tts_micro_v0_8.onnx",
@@ -172,6 +182,7 @@ export class KittenTTSBrowser {
     const configResp = await fetch(`${baseUrl}/voices/${cfg.voiceDir}/config.json`);
     const config = await configResp.json();
     this.voiceAliases = config.voice_aliases || {};
+    this.speedPriors = config.speed_priors || {};
 
     // Load ONNX model from HuggingFace + voices from local .bin files
     const ort = window.ort;
@@ -219,11 +230,17 @@ export class KittenTTSBrowser {
       const styleOffset = refId * voiceData.shape[1];
       const styleSlice = voiceData.data.slice(styleOffset, styleOffset + voiceData.shape[1]);
 
+      // Apply speed prior if model defines one for this voice
+      let effectiveSpeed = speed;
+      if (this.speedPriors[voiceId]) {
+        effectiveSpeed *= this.speedPriors[voiceId];
+      }
+
       // Build tensors
       const ort = window.ort;
       const inputIds = new ort.Tensor("int64", BigInt64Array.from(tokenIds.map(BigInt)), [1, tokenIds.length]);
       const style = new ort.Tensor("float32", styleSlice, [1, voiceData.shape[1]]);
-      const speedTensor = new ort.Tensor("float32", new Float32Array([speed]), [1]);
+      const speedTensor = new ort.Tensor("float32", new Float32Array([effectiveSpeed]), [1]);
 
       // Run inference
       const results = await this.session.run({

@@ -62,7 +62,9 @@
     <div>
       <label for="model">Model</label>
       <select id="model">
-        <option value="micro-40M">Micro &mdash; 40M</option>
+        <option value="nano-int8-15M">Nano int8 &mdash; 15M</option>
+        <option value="nano-15M">Nano &mdash; 15M</option>
+        <option value="micro-40M" selected>Micro &mdash; 40M</option>
         <option value="mini-80M">Mini &mdash; 80M</option>
       </select>
     </div>
@@ -174,7 +176,8 @@ $('#gen').addEventListener('click', async () => {
 
     // Load model (cached after first load)
     setBtnStatus('Loading model...');
-    setStatus(modelKey === tts.modelKey ? '' : `First time downloads ~${modelKey === 'micro-40M' ? '45' : '82'} MB`);
+    const dlSizes = {'nano-int8-15M':'20','nano-15M':'57','micro-40M':'45','mini-80M':'82'};
+    setStatus(modelKey === tts.modelKey ? '' : `First time downloads ~${dlSizes[modelKey] || '?'} MB`);
     const t0 = performance.now();
     await tts.loadModel(modelKey);
     const loadTime = performance.now() - t0;
