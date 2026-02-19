@@ -156,8 +156,12 @@ $('#gen').addEventListener('click', async () => {
   if (!rawText) return;
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Working...';
+  const setBtnStatus = msg => { btn.innerHTML = '<span class="spinner"></span>' + msg; };
+  setBtnStatus('Preprocessing...');
   $('#result').classList.add('hidden');
+
+  // Yield to UI so the spinner renders before heavy work starts
+  await new Promise(r => setTimeout(r, 0));
 
   try {
     const modelKey = $('#model').value;
@@ -165,17 +169,19 @@ $('#gen').addEventListener('click', async () => {
     const speed = parseFloat(speedSlider.value);
 
     // Preprocess text
-    setStatus('Preprocessing text...');
+    setStatus('');
     const cleanText = preprocessText(rawText);
 
     // Load model (cached after first load)
-    setStatus(`Loading ${modelKey} model (first time downloads ~${modelKey === 'micro-40M' ? '45' : '82'} MB)...`);
+    setBtnStatus('Loading model...');
+    setStatus(modelKey === tts.modelKey ? '' : `First time downloads ~${modelKey === 'micro-40M' ? '45' : '82'} MB`);
     const t0 = performance.now();
     await tts.loadModel(modelKey);
     const loadTime = performance.now() - t0;
 
     // Generate
-    setStatus('Generating speech...');
+    setBtnStatus('Generating speech...');
+    setStatus('');
     const t1 = performance.now();
     const audio = await tts.generate(cleanText, voice, speed);
     const genTime = (performance.now() - t1) / 1000;
