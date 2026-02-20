@@ -133,7 +133,9 @@ $('#gen').addEventListener('click', async () => {
 
     const audio = $('#audio');
     audio.src = url;
-    audio.play();
+    audio.play().catch(err => {
+      console.warn('Audio autoplay failed (iOS may require user interaction):', err);
+    });
 
     const rt = (parseFloat(genTime) / parseFloat(duration)).toFixed(2);
     $('#stats').textContent = `${parseFloat(duration).toFixed(2)}s audio \u00b7 ${genTime}s gen \u00b7 ${rt}x RT \u00b7 ${wallTime}s wall`;
