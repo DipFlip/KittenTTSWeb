@@ -137,6 +137,78 @@ async function phonemizeWithPunctuation(phonemizeFn, text) {
   return phonemes;
 }
 
+// --- IndexedDB Caching for Models and Voices ---
+class ModelCache {
+  constructor() {
+    this.dbName = "KittenTTSCache";
+    this.storeName = "models";
+  }
+
+  async init() {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(this.dbName, 1);
+      req.onerror = () => reject(req.error);
+      req.onsuccess = () => resolve(req.result);
+      req.onupgradeneeded = (e) => {
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains(this.storeName)) {
+          db.createObjectStore(this.storeName);
+        }
+      };
+    });
+  }
+
+  async get(key) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, "readonly");
+        const req = tx.objectStore(this.storeName).get(key);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve(req.result);
+      });
+    } catch (e) {
+      console.warn("IndexedDB get failed:", e);
+      return null;
+    }
+  }
+
+  async set(key, value) {
+    try {
+      const db = await this.init();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(this.storeName, "readwrite");
+        const req = tx.objectStore(this.storeName).put(value, key);
+        req.onerror = () => reject(req.error);
+        req.onsuccess = () => resolve();
+      });
+    } catch (e) {
+      console.warn("IndexedDB set failed:", e);
+    }
+  }
+}
+
+const modelCache = new ModelCache();
+
+async function fetchWithCache(url, cacheKey) {
+  // Try to get from cache first
+  const cached = await modelCache.get(cacheKey);
+  if (cached) {
+    console.log(`Loaded ${cacheKey} from cache`);
+    return cached;
+  }
+
+  // Fetch from network
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Failed to fetch ${url}`);
+  const buffer = await res.arrayBuffer();
+
+  // Store in cache for next time
+  await modelCache.set(cacheKey, buffer);
+  console.log(`Cached ${cacheKey} for offline use`);
+  return buffer;
+}
+
 // --- Main TTS class ---
 export class KittenTTSBrowser {
   constructor() {
@@ -184,16 +256,18 @@ export class KittenTTSBrowser {
     this.voiceAliases = config.voice_aliases || {};
     this.speedPriors = config.speed_priors || {};
 
-    // Load ONNX model from HuggingFace + voices from local .bin files
+    // Load ONNX model from HuggingFace (with IndexedDB cache) + voices from local .bin files
     const ort = window.ort;
     ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/";
 
-    const [session, voices] = await Promise.all([
-      ort.InferenceSession.create(`${hfBase}/${cfg.onnx}`, {
-        executionProviders: ["wasm"],
-      }),
+    const [onnxBuffer, voices] = await Promise.all([
+      fetchWithCache(`${hfBase}/${cfg.onnx}`, `onnx-${modelKey}`),
       loadVoicesFromBin(`${baseUrl}/voices/${cfg.voiceDir}`),
     ]);
+
+    const session = await ort.InferenceSession.create(new Uint8Array(onnxBuffer), {
+      executionProviders: ["wasm"],
+    });
 
     this.session = session;
     this.voices = voices;
