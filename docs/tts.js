@@ -202,6 +202,21 @@ export class KittenTTSBrowser {
 
   async ensurePhonemizerReady() {
     if (this.phonemizer) return;
+    // Polyfill: Safari/iOS lack ReadableStream async iteration, which phonemizer needs
+    if (typeof ReadableStream !== "undefined" && !ReadableStream.prototype[Symbol.asyncIterator]) {
+      ReadableStream.prototype[Symbol.asyncIterator] = async function* () {
+        const reader = this.getReader();
+        try {
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            yield value;
+          }
+        } finally {
+          reader.releaseLock();
+        }
+      };
+    }
     const mod = await import("https://cdn.jsdelivr.net/npm/phonemizer@1.2.1/+esm");
     this.phonemizer = mod.phonemize;
   }
